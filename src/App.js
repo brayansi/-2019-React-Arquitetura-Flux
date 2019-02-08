@@ -1,8 +1,15 @@
 import React, { Component } from 'react';
-import { FluxService } from './data/services/FluxService';
 import FluxList from './views/components/FluxList';
 import NewFluxItem from './views/components/NewFluxItem';
+import FluxActions from './data/actions/FluxActions';
+import FluxStore from './data/stores/FluxStore';
 import './App.css';
+
+async function getFluxState(){
+   return {
+      fluxList: await FluxStore.getAll()
+   }
+}
 
 class App extends Component {
 
@@ -12,77 +19,30 @@ class App extends Component {
          fluxList: []
       }
 
-      this.add = this.add.bind(this);
-      this.remove = this.remove.bind(this);
-      this.update = this.update.bind(this);
-      this.clear = this.clear.bind(this);
+      this._onChange = this._onChange.bind(this);
+      this._onChange();
+   }
 
+   componentDidMount() {
+      FluxStore.addChangeListerner(this._onChange);
+   }
 
+   componentWillMount() {
+      FluxStore.removeChangeListerner(this._onChange);
 
    }
 
-   async componentDidMount() {
-      const fluxList = await FluxService.list();
-      this.setState({ fluxList });
-   }
-
-   add(description) {
-      FluxService.create({
-         description,
-         isChecked: false
-      }).then(newItem => {
-         const { fluxList } = this.state;
-         fluxList.push(newItem);
-         this.setState({ fluxList });
-      });
-   }
-
-   remove(id) {
-      const { fluxList } = this.state,
-         itemIndex = fluxList.findIndex(item => item.id === id)
-
-      FluxService.remove(id).then(() => {
-         fluxList.splice(itemIndex, 1);
-         this.setState({ fluxList });
-      });
-   }
-
-   update(description) {
-      FluxService.update(description).then(() => {
-         const { fluxList } = this.state,
-            itemIndex = fluxList.findIndex(item => item.id === description.id)
-
-         fluxList[itemIndex] = description;
-         this.setState({ fluxList });
-      });
-   }
-
-   clear() {
-      const flux = [],
-         done = [],
-         { fluxList } = this.state;
-
-      fluxList.forEach((item) => {
-         if (item.isChecked) {
-            done.push(item);
-         } else {
-            flux.push(item);
-         }
-      })
-      done.forEach((item) => {
-         FluxService.remove(item.id).then(() => {
-            this.setState({ fluxList: flux });
-         });
-      })
+   async _onChange() {
+      this.setState(await getFluxState());
    }
 
    render() {
       const { state } = this;
       return (
          <div className="App">
-            <NewFluxItem onAdd={this.add} />
-            <button className="tw-btn" onClick={this.clear}>Limpar</button>
-            <FluxList items={state.fluxList} onRemove={this.remove} onUpdate={this.update} />
+            <NewFluxItem onAdd={FluxActions.create} />
+            <button className="tw-btn" onClick={FluxActions.clear}>Limpar</button>
+            <FluxList items={state.fluxList} onRemove={FluxActions.remove} onUpdate={FluxActions.update} />
          </div>
       );
    }
