@@ -15,6 +15,8 @@ class App extends Component {
       this.add = this.add.bind(this);
       this.remove = this.remove.bind(this);
       this.update = this.update.bind(this);
+      this.clear = this.clear.bind(this);
+
 
 
    }
@@ -55,12 +57,32 @@ class App extends Component {
       });
    }
 
+   clear() {
+      const flux = [],
+         done = [],
+         { fluxList } = this.state;
+
+      fluxList.forEach((item) => {
+         if (item.isChecked) {
+            done.push(item);
+         } else {
+            flux.push(item);
+         }
+      })
+      done.forEach((item) => {
+         FluxService.remove(item.id).then(() => {
+            this.setState({ fluxList: flux });
+         });
+      })
+   }
+
    render() {
       const { state } = this;
       return (
          <div className="App">
             <NewFluxItem onAdd={this.add} />
-            <FluxList items={state.fluxList} onRemove={this.remove} onUpdate={this.update}/>
+            <button className="tw-btn" onClick={this.clear}>Limpar</button>
+            <FluxList items={state.fluxList} onRemove={this.remove} onUpdate={this.update} />
          </div>
       );
    }
